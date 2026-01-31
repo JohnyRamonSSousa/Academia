@@ -601,7 +601,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
                </div>
             );
 
-         default: // Overview
+         case 'Overview':
+         default:
             return (
                <>
                   {/* Left Column - Stats */}
@@ -809,13 +810,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       }
    };
 
-   if (isAuthLoading) {
-      return (
-         <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-            <div className="text-lime-400 font-black animate-pulse uppercase tracking-[0.5em]">Carregando seu perfil...</div>
-         </div>
-      );
-   }
+   // if (isAuthLoading) {
+   //    return (
+   //       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+   //          <div className="text-lime-400 font-black animate-pulse uppercase tracking-[0.5em]">Carregando seu perfil...</div>
+   //       </div>
+   //    );
+   // }
 
    if (!user) {
       return (

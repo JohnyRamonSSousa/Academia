@@ -1,19 +1,26 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 interface LoginProps {
     onLogin?: () => void;
+    isLoggedIn?: boolean;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, isLoggedIn }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isLoggedIn) {
+            navigate('/dashboard');
+        }
+    }, [isLoggedIn, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,11 +30,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
             if (onLogin) onLogin();
-            navigate('/dashboard');
+            // Navigation handled by useEffect when isLoggedIn becomes true
         } catch (err: any) {
             console.error("Login error: ", err);
             setError('E-mail ou senha incorretos. Verifique seus dados.');
-        } finally {
             setIsLoading(false);
         }
     };

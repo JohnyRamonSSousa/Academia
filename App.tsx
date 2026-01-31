@@ -76,7 +76,7 @@ const App: React.FC = () => {
               <Route path="/trainers" element={<PageTransition><Trainers isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
               <Route path="/dashboard" element={<PageTransition><Dashboard user={currentUser} isAuthLoading={isAuthLoading} /></PageTransition>} />
-              <Route path="/login" element={<PageTransition><Login onLogin={handleLogin} /></PageTransition>} />
+              <Route path="/login" element={<PageTransition><Login onLogin={handleLogin} isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/join" element={<PageTransition><JoinNow /></PageTransition>} />
               <Route path="/payment" element={<PageTransition><Payment onPaymentSuccess={handleLogin} /></PageTransition>} />
               <Route path="/community" element={<PageTransition><Community isLoggedIn={isLoggedIn} /></PageTransition>} />
