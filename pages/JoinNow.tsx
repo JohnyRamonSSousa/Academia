@@ -55,6 +55,12 @@ const JoinNow: React.FC = () => {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
 
+            // Calculate next payment date (1 month from today)
+            const today = new Date();
+            const nextMonth = new Date(today);
+            nextMonth.setMonth(today.getMonth() + 1);
+            const nextPaymentDate = nextMonth.toLocaleDateString('pt-BR');
+
             // 2. Save additional data to Firestore
             await setDoc(doc(db, 'users', user.uid), {
                 name: formData.name,
@@ -63,11 +69,14 @@ const JoinNow: React.FC = () => {
                 plan: selectedPlan,
                 addons: selectedAddons,
                 totalPrice: totalPrice,
+                nextPayment: nextPaymentDate,
+                workoutsCompleted: 0,
+                streak: 0,
                 createdAt: new Date().toISOString()
             });
 
             // 3. Navigate immediately to Dashboard
-            navigate('/dashboard');
+            navigate('/dashboard', { replace: true });
         } catch (err: any) {
             console.error("Registration error: ", err);
             if (err.code === 'auth/email-already-in-use') {

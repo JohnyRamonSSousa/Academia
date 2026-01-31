@@ -49,7 +49,7 @@ const Payment: React.FC<PaymentProps> = ({ onPaymentSuccess }) => {
 
     const handleModalClose = () => {
         setShowSuccessModal(false);
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
     };
 
     return (

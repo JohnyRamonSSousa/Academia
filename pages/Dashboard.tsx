@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import ChangePlanModal from '../components/ChangePlanModal';
 import { Link } from 'react-router-dom';
 import { EXERCISES, PRODUCTS } from '../data';
 import { Post } from '../types';
@@ -18,6 +19,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
    const [activeTab, setActiveTab] = useState('Overview');
    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+   const [isChangePlanModalOpen, setIsChangePlanModalOpen] = useState(false);
    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
    const [userProfile, setUserProfile] = useState({
       name: 'TITÃ',
@@ -48,48 +50,52 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
    const cameraInputRef = React.useRef<HTMLInputElement>(null);
 
    useEffect(() => {
-      const fetchProfile = async () => {
-         if (!user) {
-            if (!isAuthLoading) setIsLoadingProfile(false);
-            return;
-         }
+      if (!user) {
+         if (!isAuthLoading) setIsLoadingProfile(false);
+         return;
+      }
 
-         try {
-            const docRef = doc(db, 'users', user.uid);
-            const docSnap = await getDoc(docRef);
+      setIsLoadingProfile(true);
+      const docRef = doc(db, 'users', user.uid);
 
-            if (docSnap.exists()) {
-               const data = docSnap.data();
-               const profile = {
-                  name: data.name || 'TITÃ',
-                  avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150',
-                  plan: data.plan || 'Plano Básico',
-                  nextPayment: data.nextPayment || '15 Jan 2027'
-               };
-               setUserProfile(profile);
+      const unsubscribe = onSnapshot(docRef, (docSnap) => {
+         if (docSnap.exists()) {
+            const data = docSnap.data();
+            const profile = {
+               name: data.name || 'TITÃ',
+               avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150',
+               plan: data.plan || 'Plano Básico',
+               nextPayment: data.nextPayment || '15 Jan 2027'
+            };
+            setUserProfile(profile);
+            // Only sync tempProfile if modal is closed to avoid overwriting user edits in progress (optional refinement)
+            // For simplicity, we can just sync if we assume this mainly runs on mount/external update.
+            if (!isEditModalOpen) {
                setTempProfile(profile);
-               setStats({
-                  workoutsCompleted: data.workoutsCompleted || 0,
-                  streak: data.streak || 0
-               });
             }
-         } catch (error) {
-            console.error("Error fetching profile:", error);
-         } finally {
-            setIsLoadingProfile(false);
-         }
-      };
 
-      fetchProfile();
-   }, [user, isAuthLoading]);
+            setStats({
+               workoutsCompleted: data.workoutsCompleted || 0,
+               streak: data.streak || 0
+            });
+         }
+         setIsLoadingProfile(false);
+      }, (error) => {
+         console.error("Error fetching profile:", error);
+         alert(`Erro ao carregar perfil: ${error.message}`);
+         setIsLoadingProfile(false);
+      });
+
+      return () => unsubscribe();
+   }, [user, isAuthLoading, isEditModalOpen]);
 
    useEffect(() => {
       if (!user) return;
 
       const q = query(
          collection(db, 'userWorkouts'),
-         where('userId', '==', user.uid),
-         orderBy('createdAt', 'desc')
+         where('userId', '==', user.uid)
+         // orderBy('createdAt', 'desc') // Removed to prevent index error
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -108,8 +114,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
 
       const q = query(
          collection(db, 'workoutHistory'),
-         where('userId', '==', user.uid),
-         orderBy('completedAt', 'desc')
+         where('userId', '==', user.uid)
+         // orderBy('completedAt', 'desc') // Removed to prevent index error
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -142,8 +148,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
 
       const q = query(
          collection(db, 'posts'),
-         where('userId', '==', user.uid),
-         orderBy('createdAt', 'desc')
+         where('userId', '==', user.uid)
+         // orderBy('createdAt', 'desc') // Removed to prevent index error
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -201,8 +207,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
          });
          setUserProfile(tempProfile);
          setIsEditModalOpen(false);
-      } catch (error) {
+      } catch (error: any) {
          console.error("Error updating profile:", error);
+         alert(`Erro ao atualizar perfil: ${error.message}`);
       }
    };
 
@@ -334,20 +341,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       // Optimistic update: Show image immediately
       const objectUrl = URL.createObjectURL(file);
       setTempProfile(prev => ({ ...prev, avatar: objectUrl }));
-      setUserProfile(prev => ({ ...prev, avatar: objectUrl })); // Update main profile too for instant feedback
+
 
       setIsUploading(true);
       try {
-         const storageRef = ref(storage, `avatars/${user.uid}`);
+         // Use a timestamp to avoid caching issues and ensure uniqueness
+         const uniqueFilename = `avatar_${Date.now()}`;
+         const storageRef = ref(storage, `avatars/${user.uid}/${uniqueFilename}`);
+
          await uploadBytes(storageRef, file);
          const downloadURL = await getDownloadURL(storageRef);
 
          // Update with real URL
          setTempProfile(prev => ({ ...prev, avatar: downloadURL }));
-         setUserProfile(prev => ({ ...prev, avatar: downloadURL }));
 
-         const docRef = doc(db, 'users', user.uid);
-         await updateDoc(docRef, { avatar: downloadURL });
       } catch (error: any) {
          console.error("Error uploading avatar:", error);
          alert("Erro ao fazer upload da imagem. Certifique-se de que o Firebase Storage está ativo.");
@@ -563,7 +570,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
                               <span className="text-white">Cartão •••• 4412</span>
                            </div>
                         </div>
-                        <button className="w-full mt-10 py-4 bg-lime-400 text-black rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-lime-400/20 hover:scale-105 transition-all">
+                        <button
+                           onClick={() => setIsChangePlanModalOpen(true)}
+                           className="w-full mt-10 py-4 bg-lime-400 text-black rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-lime-400/20 hover:scale-105 transition-all"
+                        >
                            Mudar de Plano
                         </button>
                      </div>
@@ -818,13 +828,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       }
    };
 
-   // if (isAuthLoading) {
-   //    return (
-   //       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-   //          <div className="text-lime-400 font-black animate-pulse uppercase tracking-[0.5em]">Carregando seu perfil...</div>
-   //       </div>
-   //    );
-   // }
+   if (isAuthLoading) {
+      return (
+         <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+            <div className="text-lime-400 font-black animate-pulse uppercase tracking-[0.5em]">Carregando seu perfil...</div>
+         </div>
+      );
+   }
 
    if (!user) {
       return (
@@ -1242,6 +1252,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
                   </div>
                )}
             </div>
+         )}
+
+
+         {user && (
+            <ChangePlanModal
+               isOpen={isChangePlanModalOpen}
+               onClose={() => setIsChangePlanModalOpen(false)}
+               user={user}
+               currentPlan={userProfile.plan}
+               nextPaymentDate={userProfile.nextPayment}
+            />
          )}
       </div>
    );
