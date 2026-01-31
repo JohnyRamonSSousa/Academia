@@ -27,7 +27,6 @@ const JoinNow: React.FC = () => {
     });
     const [selectedPlan, setSelectedPlan] = useState('pro');
     const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -67,8 +66,8 @@ const JoinNow: React.FC = () => {
                 createdAt: new Date().toISOString()
             });
 
-            // 3. Show Success Modal instead of immediate navigation
-            setShowSuccessModal(true);
+            // 3. Navigate immediately to Dashboard
+            navigate('/dashboard');
         } catch (err: any) {
             console.error("Registration error: ", err);
             if (err.code === 'auth/email-already-in-use') {
@@ -81,42 +80,9 @@ const JoinNow: React.FC = () => {
         }
     };
 
-    const handleModalClose = () => {
-        setShowSuccessModal(false);
-        navigate('/dashboard');
-    };
-
     return (
         <div className="min-h-screen bg-zinc-950 px-4 py-20 lg:py-32">
             {/* Success Modal */}
-            {showSuccessModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-10 max-w-md w-full text-center shadow-2xl animate-in zoom-in duration-300 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-lime-400"></div>
-
-                        <div className="w-24 h-24 bg-lime-400/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-lime-400/20 shadow-lg shadow-lime-400/10">
-                            <i className="fa-solid fa-crown text-lime-400 text-4xl"></i>
-                        </div>
-
-                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">
-                            PARABÉNS, TITÃ!
-                        </h3>
-
-                        <p className="text-zinc-400 mb-10 text-lg leading-relaxed">
-                            Sua matrícula foi realizada com sucesso! Você agora faz parte da <b>Elite JE Academia</b>.
-                            <br /><br />
-                            Prepare-se para transformar seu corpo e sua mente.
-                        </p>
-
-                        <button
-                            onClick={handleModalClose}
-                            className="w-full neon-bg text-black font-black py-5 rounded-2xl uppercase tracking-widest hover:bg-lime-500 transition-all transform hover:scale-105 shadow-xl shadow-lime-400/20"
-                        >
-                            Ir para Meu Painel
-                        </button>
-                    </div>
-                </div>
-            )}
 
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
                 <div>

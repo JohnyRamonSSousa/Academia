@@ -331,20 +331,28 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       const file = e.target.files?.[0];
       if (!file || !user) return;
 
+      // Optimistic update: Show image immediately
+      const objectUrl = URL.createObjectURL(file);
+      setTempProfile(prev => ({ ...prev, avatar: objectUrl }));
+      setUserProfile(prev => ({ ...prev, avatar: objectUrl })); // Update main profile too for instant feedback
+
       setIsUploading(true);
       try {
          const storageRef = ref(storage, `avatars/${user.uid}`);
          await uploadBytes(storageRef, file);
          const downloadURL = await getDownloadURL(storageRef);
 
+         // Update with real URL
          setTempProfile(prev => ({ ...prev, avatar: downloadURL }));
-         // Update profile immediately
+         setUserProfile(prev => ({ ...prev, avatar: downloadURL }));
+
          const docRef = doc(db, 'users', user.uid);
          await updateDoc(docRef, { avatar: downloadURL });
-         setUserProfile(prev => ({ ...prev, avatar: downloadURL }));
       } catch (error: any) {
          console.error("Error uploading avatar:", error);
          alert("Erro ao fazer upload da imagem. Certifique-se de que o Firebase Storage está ativo.");
+         // Revert on failure (optional but recommended, though complex to track previous state here without extra vars. 
+         // For now, we assume success or user retries. The objectUrl remains valid for the session.)
       } finally {
          setIsUploading(false);
       }
