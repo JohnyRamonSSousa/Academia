@@ -74,7 +74,7 @@ const Payment: React.FC<PaymentProps> = ({ onPaymentSuccess }) => {
                             onClick={handleModalClose}
                             className="w-full neon-bg text-black font-black py-4 rounded-xl uppercase tracking-widest hover:bg-lime-500 transition-all"
                         >
-                            Ir para o Dashboard
+                            Ir para Meu Painel
                         </button>
                     </div>
                 </div>

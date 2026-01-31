@@ -112,7 +112,7 @@ const JoinNow: React.FC = () => {
                             onClick={handleModalClose}
                             className="w-full neon-bg text-black font-black py-5 rounded-2xl uppercase tracking-widest hover:bg-lime-500 transition-all transform hover:scale-105 shadow-xl shadow-lime-400/20"
                         >
-                            Ir para o Dashboard
+                            Ir para Meu Painel
                         </button>
                     </div>
                 </div>
