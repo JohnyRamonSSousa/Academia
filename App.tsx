@@ -27,6 +27,7 @@ import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const location = useLocation();
 
   useEffect(() => {
@@ -38,6 +39,7 @@ const App: React.FC = () => {
         setIsLoggedIn(false);
         setCurrentUser(null);
       }
+      setIsAuthLoading(false);
     });
 
     return () => unsubscribe();
@@ -73,7 +75,7 @@ const App: React.FC = () => {
               <Route path="/crossfit" element={<PageTransition><CrossFit isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/trainers" element={<PageTransition><Trainers isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
-              <Route path="/dashboard" element={<PageTransition><Dashboard user={currentUser} /></PageTransition>} />
+              <Route path="/dashboard" element={<PageTransition><Dashboard user={currentUser} isAuthLoading={isAuthLoading} /></PageTransition>} />
               <Route path="/login" element={<PageTransition><Login onLogin={handleLogin} /></PageTransition>} />
               <Route path="/join" element={<PageTransition><JoinNow /></PageTransition>} />
               <Route path="/payment" element={<PageTransition><Payment onPaymentSuccess={handleLogin} /></PageTransition>} />

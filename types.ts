@@ -109,3 +109,30 @@ export interface Dance {
   image: string;
   icon: string;
 }
+export interface WorkoutExercise {
+  exerciseId: string;
+  name: string;
+  sets: string;
+  reps: string;
+  muscleGroup: string;
+}
+
+export interface UserWorkout {
+  id: string;
+  userId: string;
+  name: string;
+  muscleGroup: string;
+  duration: string;
+  exercises?: WorkoutExercise[];
+  createdAt: any;
+}
+
+export interface WorkoutHistory {
+  id: string;
+  userId: string;
+  workoutName: string;
+  muscleGroup: string;
+  actualDuration: string; // Formatted duration e.g. "45:12"
+  exerciseCount: number;
+  completedAt: any;
+}
