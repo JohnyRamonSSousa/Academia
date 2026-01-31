@@ -1,5 +1,5 @@
 
-import { MuscleGroup, Exercise, CrossFitWOD, PersonalTrainer, Product } from './types';
+import { MuscleGroup, Exercise, CrossFitWOD, PersonalTrainer, Product, MartialArt, Dance } from './types';
 
 export const EXERCISES: Exercise[] = [
   {
@@ -179,5 +179,115 @@ export const TRAINER_TIPS = [
     title: 'Postura no Agachamento',
     content: 'Mantenha o peito aberto e o core ativado. Seus joelhos agradecem e seus glúteos trabalham o dobro.',
     image: 'https://images.unsplash.com/photo-1574680077505-ef7da61783cf?q=80&w=400'
+  }
+];
+
+export const MARTIAL_ARTS: MartialArt[] = [
+  {
+    id: 'm1',
+    slug: 'jiu-jitsu',
+    name: 'Jiu-Jitsu',
+    tagline: 'A Arte Suave',
+    description: 'Técnica, alavanca e controle. Aprenda a arte da finalização com nossos mestres graduados.',
+    longDescription: 'O Brazilian Jiu-Jitsu (BJJ) é uma arte marcial focada em combate no solo e técnicas de isolamento. Baseia-se no conceito de que um lutador menor e mais fraco pode se defender com sucesso contra um oponente maior e mais forte, usando a técnica adequada e alavancas.',
+    benefits: ['Condicionamento Físico Extremo', 'Autodefesa Real', 'Alívio de Stress', 'Comunidade Unida'],
+    schedule: 'Seg, Qua, Sex - 19:30',
+    priceSingleClass: 45.00,
+    image: 'https://images.unsplash.com/photo-1555597673-b21d5c935865?q=80&w=800',
+    icon: 'fa-solid fa-uniform-martial-arts'
+  },
+  {
+    id: 'm2',
+    slug: 'muay-thai',
+    name: 'Muay Thai',
+    tagline: 'A Arte das 8 Armas',
+    description: 'Utilize punhos, cotovelos, joelhos e canelas em um treino de alta intensidade e queima calórica.',
+    longDescription: 'O Muay Thai é uma arte marcial tailandesa conhecida como "A Arte das 8 Armas". É um dos sistemas de combate em pé mais eficazes do mundo, combinando socos, chutes, cotoveladas e joelhadas com técnicas avançadas de clinch.',
+    benefits: ['Queima Calórica Intensa', 'Força Explosiva', 'Coordenação Motora', 'Disciplina Mental'],
+    schedule: 'Ter, Qui - 18:00',
+    priceSingleClass: 40.00,
+    image: 'https://images.unsplash.com/photo-1552072805-2a9039d00e57?q=80&w=800',
+    icon: 'fa-solid fa-hand-fist'
+  },
+  {
+    id: 'm3',
+    slug: 'boxe',
+    name: 'Boxe',
+    tagline: 'A Nobre Arte',
+    description: 'Refine sua coordenação, agilidade e potência com o treinamento clássico de pugilismo.',
+    longDescription: 'O Boxe é uma arte marcial e esporte de combate focado exclusivamente no uso dos punhos. É conhecido por desenvolver agilidade incrível, reflexos rápidos e uma potência de impacto devastadora, além de um core extremamente forte.',
+    benefits: ['Fortalecimento Cardiovascular', 'Velocidade de Reação', 'Agilidade nos Pés', 'Resiliência'],
+    schedule: 'Seg, Qua, Sex - 17:00',
+    priceSingleClass: 35.00,
+    image: 'https://images.unsplash.com/photo-1509830847415-6ef34bd4feab?q=80&w=800',
+    icon: 'fa-solid fa-mitten'
+  },
+  {
+    id: 'm4',
+    slug: 'judo',
+    name: 'Judô',
+    tagline: 'Caminho Suave',
+    description: 'Disciplina, respeito e eficiência. Desenvolva corpo e mente através das quedas e imobilizações.',
+    longDescription: 'O Judô é uma arte marcial japonesa que utiliza o peso e a força do adversário contra ele mesmo. Foca em projeções, quedas e técnicas de controle no solo, priorizando a máxima eficiência com o mínimo esforço.',
+    benefits: ['Equilíbrio e Postura', 'Flexibilidade', 'Respeito e Etiqueta', 'Controle Emocional'],
+    schedule: 'Ter, Qui - 20:00',
+    priceSingleClass: 38.00,
+    image: 'https://images.unsplash.com/photo-1534368420009-621bfab424a8?q=80&w=800',
+    icon: 'fa-solid fa-user-ninja'
+  }
+];
+
+export const DANCES: Dance[] = [
+  {
+    id: 'd1',
+    slug: 'zumba',
+    name: 'Zumba',
+    tagline: 'Festa & Cardio',
+    description: 'Misture ritmos latinos e internacionais com exercícios aeróbicos para uma queima calórica divertida.',
+    longDescription: 'A Zumba é uma aula de fitness inspirada na dança latina que combina música latina e internacional com movimentos de dança. As rotinas de Zumba incorporam treinamento intervalado, alternando ritmos rápidos e lentos, para ajudar a melhorar o condicionamento cardiovascular.',
+    benefits: ['Queima Calórica Alta', 'Melhora do Humor', 'Coordenação', 'Socialização'],
+    schedule: 'Seg, Qua - 18:30',
+    priceSingleClass: 30.00,
+    image: 'https://images.unsplash.com/photo-1524594152303-9fd13543fe6e?q=80&w=800',
+    icon: 'fa-solid fa-music'
+  },
+  {
+    id: 'd2',
+    slug: 'fitdance',
+    name: 'FitDance',
+    tagline: 'Mova sua Vida',
+    description: 'Aulas dinâmicas com as coreografias mais bombadas do momento para você dançar e se exercitar.',
+    longDescription: 'O FitDance é um programa de aulas de dança que utiliza coreografias de diversos estilos musicais. O foco é a diversão e o gasto calórico, permitindo que qualquer pessoa, independente do nível de dança, possa acompanhar e se exercitar.',
+    benefits: ['Ritmo e Agilidade', 'Bem-estar Mental', 'Condicionamento Físico', 'Autoestima'],
+    schedule: 'Ter, Qui - 19:00',
+    priceSingleClass: 35.00,
+    image: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=800',
+    icon: 'fa-solid fa-fire'
+  },
+  {
+    id: 'd3',
+    slug: 'ballet-fitness',
+    name: 'Ballet Fitness',
+    tagline: 'Graciosidade & Força',
+    description: 'Combine a delicadeza do ballet clássico com exercícios de fitness para tonificar o corpo todo.',
+    longDescription: 'O Ballet Fitness une os passos técnicos do ballet clássico com exercícios de agachamento, abdominais e braços. É uma modalidade que trabalha a postura, a flexibilidade e o tônus muscular de forma elegante e intensa.',
+    benefits: ['Postura Impecável', 'Tônus Muscular', 'Flexibilidade', 'Resistência'],
+    schedule: 'Seg, Sex - 17:30',
+    priceSingleClass: 40.00,
+    image: 'https://images.unsplash.com/photo-1518834107812-67b0b7c58434?q=80&w=800',
+    icon: 'fa-solid fa-person-rays'
+  },
+  {
+    id: 'd4',
+    slug: 'hip-hop',
+    name: 'Hip Hop',
+    tagline: 'Cultura & Atitute',
+    description: 'Aprenda os movimentos da cultura urbana em uma aula cheia de energia, técnica e performance.',
+    longDescription: 'As aulas de Hip Hop focam em movimentos rítmicos e expressivos da dança de rua. É uma ótima maneira de desenvolver coordenação, força e expressão corporal, tudo ao som das batidas mais pesadas do gênero.',
+    benefits: ['Expressão Corporal', 'Força de Core', 'Ritmo Avançado', 'Confiança'],
+    schedule: 'Qua, Sex - 20:30',
+    priceSingleClass: 32.00,
+    image: 'https://images.unsplash.com/photo-1547153760-18fc86324498?q=80&w=800',
+    icon: 'fa-solid fa-radio'
   }
 ];

@@ -9,14 +9,29 @@ const PostForm: React.FC<PostFormProps> = ({ onPost }) => {
     const [image, setImage] = useState('');
     const [caption, setCaption] = useState('');
     const [isExpanded, setIsExpanded] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setImage(base64String);
+                setPreviewUrl(base64String);
+                setIsExpanded(true);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (image.trim() && caption.trim()) {
             onPost(image, caption);
             setImage('');
-            caption;
             setCaption('');
+            setPreviewUrl(null);
             setIsExpanded(false);
         }
     };
@@ -25,13 +40,21 @@ const PostForm: React.FC<PostFormProps> = ({ onPost }) => {
         <div className="glass-card rounded-3xl border border-zinc-800 p-6 mb-12 shadow-2xl transition-all hover:border-lime-400/20">
             {!isExpanded ? (
                 <div
-                    onClick={() => setIsExpanded(true)}
-                    className="flex items-center gap-4 cursor-pointer"
+                    className="flex items-center gap-4"
                 >
-                    <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center">
-                        <i className="fa-solid fa-camera text-zinc-500 text-xl"></i>
-                    </div>
-                    <div className="flex-grow bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-3 text-zinc-500 text-sm">
+                    <label className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center cursor-pointer hover:border-lime-400 hover:text-lime-400 transition-colors">
+                        <i className="fa-solid fa-camera text-xl"></i>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageChange}
+                        />
+                    </label>
+                    <div
+                        onClick={() => setIsExpanded(true)}
+                        className="flex-grow bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-3 text-zinc-500 text-sm cursor-pointer hover:border-zinc-700"
+                    >
                         Compartilhe seu progresso, {new Date().getHours() < 12 ? 'Bom dia!' : 'Boa tarde!'}...
                     </div>
                 </div>
@@ -49,18 +72,31 @@ const PostForm: React.FC<PostFormProps> = ({ onPost }) => {
                     </div>
 
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">URL da Foto</label>
-                            <input
-                                type="url"
-                                value={image}
-                                onChange={(e) => setImage(e.target.value)}
-                                placeholder="Cole o endereço de uma imagem aqui..."
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-lime-400 transition-colors"
-                                required
-                            />
-                            <p className="text-[10px] text-zinc-600 mt-2">Dica: Use links do Unsplash ou similares para testar.</p>
-                        </div>
+                        {previewUrl ? (
+                            <div className="relative aspect-video rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800">
+                                <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
+                                <button
+                                    type="button"
+                                    onClick={() => { setPreviewUrl(null); setImage(''); }}
+                                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
+                                >
+                                    <i className="fa-solid fa-times"></i>
+                                </button>
+                            </div>
+                        ) : (
+                            <label className="flex flex-col items-center justify-center w-full h-32 bg-zinc-900 border-2 border-dashed border-zinc-800 rounded-2xl cursor-pointer hover:border-lime-400/50 transition-colors group">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <i className="fa-solid fa-cloud-arrow-up text-zinc-600 text-2xl mb-2 group-hover:text-lime-400"></i>
+                                    <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest group-hover:text-zinc-400">Clique para enviar ou usar a câmera</p>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleImageChange}
+                                />
+                            </label>
+                        )}
 
                         <div>
                             <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Legenda</label>

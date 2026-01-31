@@ -15,20 +15,45 @@ import Payment from './pages/Payment';
 import Community from './pages/Community';
 import ForgotPassword from './pages/ForgotPassword';
 import Scheduling from './pages/Scheduling';
+import MartialArtDetail from './pages/MartialArtDetail';
+import DanceDetail from './pages/DanceDetail';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import PageTransition from './components/PageTransition';
 
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const location = useLocation();
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+      } else {
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleLogin = () => {
-    setIsLoggedIn(true);
+    // This will be handled by onAuthStateChanged after redirect/login
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // onAuthStateChanged will handle the state update
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
   };
 
   return (
@@ -43,18 +68,20 @@ const App: React.FC = () => {
             exit={{ opacity: 0 }}
           >
             <Routes location={location}>
-              <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+              <Route path="/" element={<PageTransition><Home isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/exercises" element={<PageTransition><Exercises isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/crossfit" element={<PageTransition><CrossFit isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/trainers" element={<PageTransition><Trainers isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/shop" element={<PageTransition><Shop /></PageTransition>} />
-              <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+              <Route path="/dashboard" element={<PageTransition><Dashboard user={currentUser} /></PageTransition>} />
               <Route path="/login" element={<PageTransition><Login onLogin={handleLogin} /></PageTransition>} />
               <Route path="/join" element={<PageTransition><JoinNow /></PageTransition>} />
-              <Route path="/payment" element={<PageTransition><Payment /></PageTransition>} />
+              <Route path="/payment" element={<PageTransition><Payment onPaymentSuccess={handleLogin} /></PageTransition>} />
               <Route path="/community" element={<PageTransition><Community isLoggedIn={isLoggedIn} /></PageTransition>} />
               <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
               <Route path="/scheduling" element={<PageTransition><Scheduling /></PageTransition>} />
+              <Route path="/martial-arts/:slug" element={<PageTransition><MartialArtDetail /></PageTransition>} />
+              <Route path="/dances/:slug" element={<PageTransition><DanceDetail /></PageTransition>} />
             </Routes>
           </motion.div>
         </AnimatePresence>

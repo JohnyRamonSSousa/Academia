@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const PLANS = [
     { id: 'basic', name: 'Básico', price: 89.90, desc: 'Ideal para iniciantes na musculação' },
@@ -15,14 +14,22 @@ const ADDONS = [
     { id: 'nutri', name: 'Plano Nutricional', price: 60.00, icon: 'fa-apple-whole' }
 ];
 
+import { auth, db } from '../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+
 const JoinNow: React.FC = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         phone: '',
+        password: '',
     });
     const [selectedPlan, setSelectedPlan] = useState('pro');
     const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const toggleAddon = (id: string) => {
@@ -39,22 +46,78 @@ const JoinNow: React.FC = () => {
         return planPrice + addonsPrice;
     }, [selectedPlan, selectedAddons]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Registration details:', { ...formData, selectedPlan, selectedAddons, totalPrice });
+        setError('');
+        setIsLoading(true);
 
-        // Pass state to payment page
-        navigate('/payment', {
-            state: {
-                totalPrice,
-                planName: PLANS.find(p => p.id === selectedPlan)?.name,
-                addons: selectedAddons.map(id => ADDONS.find(a => a.id === id))
+        try {
+            // 1. Create User in Firebase Auth
+            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+            const user = userCredential.user;
+
+            // 2. Save additional data to Firestore
+            await setDoc(doc(db, 'users', user.uid), {
+                name: formData.name,
+                phone: formData.phone,
+                email: formData.email,
+                plan: selectedPlan,
+                addons: selectedAddons,
+                totalPrice: totalPrice,
+                createdAt: new Date().toISOString()
+            });
+
+            // 3. Show Success Modal instead of immediate navigation
+            setShowSuccessModal(true);
+        } catch (err: any) {
+            console.error("Registration error: ", err);
+            if (err.code === 'auth/email-already-in-use') {
+                setError('Este e-mail já está em uso. Tente outro.');
+            } else {
+                setError('Erro ao criar conta. Tente novamente mais tarde.');
             }
-        });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleModalClose = () => {
+        setShowSuccessModal(false);
+        navigate('/dashboard');
     };
 
     return (
         <div className="min-h-screen bg-zinc-950 px-4 py-20 lg:py-32">
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-10 max-w-md w-full text-center shadow-2xl animate-in zoom-in duration-300 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-lime-400"></div>
+
+                        <div className="w-24 h-24 bg-lime-400/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-lime-400/20 shadow-lg shadow-lime-400/10">
+                            <i className="fa-solid fa-crown text-lime-400 text-4xl"></i>
+                        </div>
+
+                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">
+                            PARABÉNS, TITÃ!
+                        </h3>
+
+                        <p className="text-zinc-400 mb-10 text-lg leading-relaxed">
+                            Sua matrícula foi realizada com sucesso! Você agora faz parte da <b>Elite JE Academia</b>.
+                            <br /><br />
+                            Prepare-se para transformar seu corpo e sua mente.
+                        </p>
+
+                        <button
+                            onClick={handleModalClose}
+                            className="w-full neon-bg text-black font-black py-5 rounded-2xl uppercase tracking-widest hover:bg-lime-500 transition-all transform hover:scale-105 shadow-xl shadow-lime-400/20"
+                        >
+                            Ir para o Dashboard
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
                 <div>
                     <h1 className="text-5xl md:text-7xl font-black text-white leading-none mb-8">
@@ -101,11 +164,16 @@ const JoinNow: React.FC = () => {
 
                 <div className="glass-card p-8 md:p-12 rounded-3xl border border-zinc-800">
                     <form onSubmit={handleSubmit} className="space-y-10">
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl text-xs font-bold text-center uppercase tracking-widest">
+                                {error}
+                            </div>
+                        )}
                         <div className="space-y-6">
                             <h4 className="text-sm font-black text-lime-400 uppercase tracking-[0.3em]">1. Seus Dados</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-widest">Nome</label>
+                                    <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-widest">Nome Completo</label>
                                     <input
                                         type="text"
                                         required
@@ -116,7 +184,7 @@ const JoinNow: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-widest">WhatsApp</label>
+                                    <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-widest">WhatsApp / Celular</label>
                                     <input
                                         type="tel"
                                         required
@@ -124,6 +192,28 @@ const JoinNow: React.FC = () => {
                                         placeholder="(00) 00000-0000"
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-widest">Seu E-mail</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-lime-400 transition-colors"
+                                        placeholder="seu@email.com"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-widest">Crie uma Senha</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-lime-400 transition-colors"
+                                        placeholder="••••••••"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -181,9 +271,10 @@ const JoinNow: React.FC = () => {
 
                         <button
                             type="submit"
-                            className="w-full neon-bg hover:bg-lime-500 text-black font-black py-5 rounded-2xl uppercase tracking-[0.2em] transition-all transform hover:scale-[1.02] shadow-lg shadow-lime-500/20 mt-8"
+                            disabled={isLoading}
+                            className="w-full neon-bg hover:bg-lime-500 text-black font-black py-5 rounded-2xl uppercase tracking-[0.2em] transition-all transform hover:scale-[1.02] shadow-lg shadow-lime-500/20 mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Matricular Agora
+                            {isLoading ? 'Matriculando...' : 'Matricular Agora'}
                         </button>
                     </form>
                 </div>

@@ -61,9 +61,11 @@ export interface Post {
   id: string;
   userName: string;
   userAvatar: string;
+  userId?: string;
   image: string;
   caption: string;
-  likes: number;
+  likesCount: number;
+  likedBy: string[];
   comments: Comment[];
   createdAt: string;
   isLiked?: boolean;
@@ -78,4 +80,32 @@ export interface Notification {
   postId?: string;
   createdAt: string;
   isRead: boolean;
+}
+
+export interface MartialArt {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  longDescription: string;
+  benefits: string[];
+  schedule: string;
+  priceSingleClass: number;
+  image: string;
+  icon: string;
+}
+
+export interface Dance {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  longDescription: string;
+  benefits: string[];
+  schedule: string;
+  priceSingleClass: number;
+  image: string;
+  icon: string;
 }

@@ -7,10 +7,23 @@ import { Post, Comment } from '../types';
 
 const INITIAL_POSTS: Post[] = [];
 
+import { auth, db } from '../firebase';
+import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, getDoc, arrayUnion } from 'firebase/firestore';
+
 const RANKING_DATA = [
     { id: 'r1', name: 'Ana Paula', score: 1250, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=80', rank: 1 },
     { id: 'r2', name: 'Carlos Silva', score: 980, avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=80', rank: 2 },
     { id: 'r3', name: 'Mariana Oliveira', score: 850, avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=80', rank: 3 },
+];
+
+const STORIES_DATA = [
+    { id: 's1', name: 'Seu Story', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150', isUser: true },
+    { id: 's2', name: 'Ana Paula', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150' },
+    { id: 's3', name: 'Carlos Silva', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=150' },
+    { id: 's4', name: 'Mariana', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150' },
+    { id: 's5', name: 'Ricardo', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=150' },
+    { id: 's6', name: 'Juliana', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=150' },
+    { id: 's7', name: 'Marcos', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150' },
 ];
 
 interface CommunityProps {
@@ -18,30 +31,73 @@ interface CommunityProps {
 }
 
 const Community: React.FC<CommunityProps> = ({ isLoggedIn }) => {
-    const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [userProfile, setUserProfile] = useState({
+        name: 'TITÃ',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80'
+    });
 
     useEffect(() => {
-        localStorage.setItem('je_community_posts', JSON.stringify(posts));
-    }, [posts]);
-
-    useEffect(() => {
-        localStorage.setItem('je_community_posts', JSON.stringify(posts));
-    }, [posts]);
-
-    const handleCreatePost = (image: string, caption: string) => {
-        if (!isLoggedIn) return;
-        const newPost: Post = {
-            id: Date.now().toString(),
-            userName: 'Você (Aluno JE)',
-            userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80',
-            image,
-            caption,
-            likes: 0,
-            comments: [],
-            createdAt: 'Agora mesmo',
-            isLiked: false
+        // 1. Fetch User Profile
+        const fetchUserProfile = async () => {
+            const user = auth.currentUser;
+            if (user) {
+                const docRef = doc(db, 'users', user.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setUserProfile({
+                        name: data.name || 'TITÃ',
+                        avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80'
+                    });
+                }
+            }
         };
-        setPosts([newPost, ...posts]);
+
+        if (isLoggedIn) fetchUserProfile();
+
+        // 2. Real-time Posts Listener
+        const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const user = auth.currentUser;
+            const fetchedPosts = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    isLiked: data.likedBy?.includes(user?.uid)
+                } as Post;
+            });
+            setPosts(fetchedPosts);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching posts:", error);
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [isLoggedIn]);
+
+    const handleCreatePost = async (image: string, caption: string) => {
+        const user = auth.currentUser;
+        if (!isLoggedIn || !user) return;
+
+        try {
+            await addDoc(collection(db, 'posts'), {
+                userName: userProfile.name,
+                userAvatar: userProfile.avatar,
+                userId: user.uid,
+                image,
+                caption,
+                likesCount: 0,
+                likedBy: [],
+                comments: [],
+                createdAt: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error("Error creating post:", error);
+        }
     };
 
     const dispatchNotification = (type: 'like' | 'comment', fromUser: string, avatar: string, content: string) => {
@@ -59,52 +115,61 @@ const Community: React.FC<CommunityProps> = ({ isLoggedIn }) => {
         window.dispatchEvent(event);
     };
 
-    const handleLike = (postId: string) => {
-        if (!isLoggedIn) {
+    const handleLike = async (postId: string) => {
+        const user = auth.currentUser;
+        if (!isLoggedIn || !user) {
             alert('Você precisa estar logado para curtir as postagens!');
             return;
         }
-        setPosts(prev => prev.map(post => {
-            if (post.id === postId) {
-                const isLiking = !post.isLiked;
-                if (isLiking) {
+
+        try {
+            const postRef = doc(db, 'posts', postId);
+            const postSnap = await getDoc(postRef);
+            if (postSnap.exists()) {
+                const postData = postSnap.data();
+                const likedBy = postData.likedBy || [];
+                const isLiked = likedBy.includes(user.uid);
+
+                await updateDoc(postRef, {
+                    likedBy: isLiked ? likedBy.filter((uid: string) => uid !== user.uid) : [...likedBy, user.uid],
+                    likesCount: isLiked ? (postData.likesCount || 1) - 1 : (postData.likesCount || 0) + 1
+                });
+
+                if (!isLiked) {
                     dispatchNotification('like', 'Um Aluno JE', 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=80', 'curtiu sua publicação');
                 }
-                return {
-                    ...post,
-                    likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-                    isLiked: !post.isLiked
-                };
             }
-            return post;
-        }));
+        } catch (error) {
+            console.error("Error liking post:", error);
+        }
     };
 
-    const handleComment = (postId: string, content: string) => {
-        if (!isLoggedIn) {
+    const handleComment = async (postId: string, content: string) => {
+        const user = auth.currentUser;
+        if (!isLoggedIn || !user) {
             alert('Você precisa estar logado para comentar!');
             return;
         }
 
-        dispatchNotification('comment', 'Um Aluno JE', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=80', 'respondeu ao seu post: "' + content.substring(0, 20) + '..."');
+        try {
+            const postRef = doc(db, 'posts', postId);
+            const newComment: Comment = {
+                id: Date.now().toString(),
+                userName: userProfile.name,
+                userAvatar: userProfile.avatar,
+                content,
+                createdAt: 'Agora mesmo'
+            };
 
-        const newComment: Comment = {
-            id: Date.now().toString(),
-            userName: 'Você (Aluno JE)',
-            userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80',
-            content,
-            createdAt: 'Agora mesmo'
-        };
+            await updateDoc(postRef, {
+                comments: arrayUnion(newComment)
+            });
 
-        setPosts(prev => prev.map(post => {
-            if (post.id === postId) {
-                return {
-                    ...post,
-                    comments: [...post.comments, newComment]
-                };
-            }
-            return post;
-        }));
+            dispatchNotification('comment', 'Um Aluno JE', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=80', 'respondeu ao seu post: "' + content.substring(0, 20) + '..."');
+
+        } catch (error) {
+            console.error("Error commenting:", error);
+        }
     };
 
     return (
@@ -123,11 +188,30 @@ const Community: React.FC<CommunityProps> = ({ isLoggedIn }) => {
                 {isLoggedIn ? (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                         {/* Main Feed */}
-                        <div className="lg:col-span-8 space-y-8">
+                        <div className="lg:col-span-8 space-y-6">
+                            {/* Stories Section */}
+                            <div className="bg-zinc-950/50 border border-zinc-900 rounded-3xl p-4 overflow-x-auto no-scrollbar scroll-smooth flex gap-4 mb-2">
+                                {STORIES_DATA.map((story) => (
+                                    <div key={story.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group">
+                                        <div className={`w-16 h-16 rounded-full p-[2.5px] ${story.isUser ? 'border border-zinc-700' : 'bg-gradient-to-tr from-lime-400 to-emerald-500'} group-active:scale-95 transition-transform`}>
+                                            <div className="w-full h-full rounded-full border-2 border-zinc-950 overflow-hidden relative">
+                                                <img src={story.avatar} className="w-full h-full object-cover" alt={story.name} />
+                                                {story.isUser && (
+                                                    <div className="absolute bottom-0 right-0 w-5 h-5 bg-blue-500 rounded-full border-2 border-zinc-950 flex items-center justify-center translate-x-1 translate-y-1 scale-75">
+                                                        <i className="fa-solid fa-plus text-white text-[10px]"></i>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="text-[10px] font-medium text-zinc-400 truncate w-16 text-center">{story.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+
                             <PostForm onPost={handleCreatePost} />
 
                             {/* Feed */}
-                            <div className="space-y-8">
+                            <div className="space-y-6">
                                 {posts.map(post => (
                                     <PostCard
                                         key={post.id}

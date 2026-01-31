@@ -1,17 +1,35 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
-const Login: React.FC = () => {
+interface LoginProps {
+    onLogin?: () => void;
+}
+
+const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Simulate login
-        console.log('Login attempt:', { email, password });
-        navigate('/dashboard');
+        setError('');
+        setIsLoading(true);
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            if (onLogin) onLogin();
+            navigate('/dashboard');
+        } catch (err: any) {
+            console.error("Login error: ", err);
+            setError('E-mail ou senha incorretos. Verifique seus dados.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -27,6 +45,11 @@ const Login: React.FC = () => {
 
                 <div className="glass-card p-8 rounded-2xl border border-zinc-800">
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-xs font-bold text-center uppercase tracking-widest">
+                                {error}
+                            </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-zinc-400 mb-2 uppercase tracking-widest">E-mail</label>
                             <input
@@ -58,9 +81,10 @@ const Login: React.FC = () => {
                         </div>
                         <button
                             type="submit"
-                            className="w-full neon-bg hover:bg-lime-500 text-black font-black py-4 rounded-xl uppercase tracking-widest transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                            disabled={isLoading}
+                            className="w-full neon-bg hover:bg-lime-500 text-black font-black py-4 rounded-xl uppercase tracking-widest transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Entrar
+                            {isLoading ? 'Entrando...' : 'Entrar'}
                         </button>
                     </form>
 

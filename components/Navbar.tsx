@@ -37,12 +37,13 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogin, onLogout }) => {
     { name: 'CrossFit', path: '/crossfit' },
     { name: 'Comunidade', path: '/community' },
     { name: 'Matricule-se', path: '/join' },
-  ];
+  ].filter(link => !(isLoggedIn && link.path === '/join'));
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800">
+    <nav className={`sticky top-0 z-50 border-b border-zinc-800 transition-all duration-300 ${isMenuOpen ? 'bg-zinc-950' : 'bg-zinc-950/80 backdrop-blur-md'
+      }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center">
@@ -160,39 +161,73 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogin, onLogout }) => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="md:hidden bg-zinc-900 border-b border-zinc-800 px-2 pt-2 pb-3 space-y-1 sm:px-3">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              onClick={() => setIsMenuOpen(false)}
-              className={`${isActive(link.path) ? 'bg-zinc-800 text-lime-400' : 'text-zinc-300'
-                } block px-3 py-2 rounded-md text-base font-medium`}
-            >
-              {link.name}
-            </Link>
-          ))}
-          {!isLoggedIn ? (
-            <Link
-              to="/login"
-              onClick={() => setIsMenuOpen(false)}
-              className="w-full text-left neon-bg text-black block px-3 py-2 rounded-md text-base font-bold"
-            >
-              Login
-            </Link>
-          ) : (
-            <Link
-              to="/dashboard"
-              onClick={() => setIsMenuOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-white bg-zinc-800"
-            >
-              Minha Conta
-            </Link>
-          )}
-        </div>
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        />
       )}
+
+      {/* Mobile Drawer Menu */}
+      <div className={`fixed top-0 left-0 h-full w-[280px] bg-zinc-950 z-[100] transform transition-transform duration-300 ease-in-out border-r border-zinc-800 md:hidden shadow-2xl ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-10">
+            <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-2">
+              <span className="text-xl font-black tracking-tighter text-white">JE<span className="neon-accent"> ACADEMIA</span></span>
+            </Link>
+            <button
+              onClick={() => setIsMenuOpen(false)}
+              className="text-zinc-400 hover:text-white p-2"
+            >
+              <i className="fa-solid fa-xmark text-2xl"></i>
+            </button>
+          </div>
+
+          <div className="space-y-2 mb-10">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setIsMenuOpen(false)}
+                className={`${isActive(link.path) ? 'bg-zinc-800/50 text-lime-400 border-l-2 border-lime-400' : 'text-zinc-300'
+                  } block px-4 py-3 text-sm font-bold uppercase tracking-widest`}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
+
+          <div className="pt-6 border-t border-zinc-900">
+            {!isLoggedIn ? (
+              <Link
+                to="/login"
+                onClick={() => setIsMenuOpen(false)}
+                className="w-full neon-bg text-black block px-6 py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest"
+              >
+                Entrar
+              </Link>
+            ) : (
+              <div className="space-y-4">
+                <Link
+                  to="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block px-6 py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                >
+                  Minha Conta
+                </Link>
+                <button
+                  onClick={() => { onLogout(); setIsMenuOpen(false); }}
+                  className="w-full text-zinc-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                >
+                  Sair da Conta
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </nav>
   );
 };

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CROSSFIT_WODS, TRAINERS, TRAINER_TIPS } from '../data';
+import { CROSSFIT_WODS, TRAINERS, TRAINER_TIPS, MARTIAL_ARTS, DANCES } from '../data';
 
 interface CrossFitProps {
   isLoggedIn: boolean;
@@ -118,6 +118,94 @@ const CrossFit: React.FC<CrossFitProps> = ({ isLoggedIn }) => {
                   </div>
                 </div>
               </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Martial Arts Section */}
+        <section className="mt-32">
+          <div className="text-center mb-16">
+            <span className="inline-block bg-lime-400/20 text-lime-400 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 border border-lime-400/30">
+              Combate & Disciplina
+            </span>
+            <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter mb-4">
+              LUTAS <span className="neon-accent">JE</span>
+            </h2>
+            <p className="text-zinc-500 max-w-2xl mx-auto uppercase text-[10px] font-bold tracking-widest">
+              Domine as técnicas das artes marciais mais eficientes do mundo
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {MARTIAL_ARTS.map((art) => (
+              <Link
+                to={`/martial-arts/${art.slug}`}
+                key={art.id}
+                className="group relative rounded-[2.5rem] overflow-hidden aspect-[4/5] bg-zinc-900 border border-zinc-800 hover:border-lime-400/50 transition-all duration-500"
+              >
+                <img src={art.image} alt={art.name} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
+
+                <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                  <div className="w-12 h-12 bg-lime-400 rounded-2xl flex items-center justify-center text-black mb-4 transform -rotate-12 group-hover:rotate-0 transition-transform shadow-lg shadow-lime-400/20">
+                    <i className={`${art.icon} text-xl`}></i>
+                  </div>
+                  <h3 className="text-2xl font-black text-white uppercase italic mb-1">{art.name}</h3>
+                  <p className="text-lime-400 text-[10px] font-black uppercase tracking-widest mb-4">{art.tagline}</p>
+                  <p className="text-zinc-400 text-xs leading-relaxed opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+                    {art.description}
+                  </p>
+
+                  <div className="mt-6 flex items-center gap-2 text-[10px] font-black text-white uppercase tracking-widest group/btn">
+                    Ver Detalhes
+                    <i className="fa-solid fa-arrow-right text-lime-400 group-hover/btn:translate-x-1 transition-transform"></i>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Danças Section */}
+        <section className="mt-32 mb-20">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div>
+              <span className="text-lime-400 font-black uppercase tracking-[0.3em] text-xs mb-3 block">Mova-se no Ritmo</span>
+              <h2 className="text-4xl md:text-6xl font-black text-white italic uppercase tracking-tighter leading-none">
+                DANÇAS <span className="neon-accent">JE</span>
+              </h2>
+            </div>
+            <p className="max-w-md text-zinc-500 font-medium leading-relaxed italic">
+              Queime calorias, melhore sua coordenação e divirta-se com as coreografias mais bombadas do momento.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {DANCES.map((dance) => (
+              <Link
+                to={`/dances/${dance.slug}`}
+                key={dance.id}
+                className="group relative rounded-[2.5rem] overflow-hidden aspect-[4/5] bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 transition-all duration-500"
+              >
+                <img src={dance.image} alt={dance.name} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
+
+                <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                  <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-black mb-4 transform rotate-12 group-hover:rotate-0 transition-transform shadow-lg shadow-emerald-500/20">
+                    <i className={`${dance.icon} text-xl`}></i>
+                  </div>
+                  <h3 className="text-2xl font-black text-white uppercase italic mb-1">{dance.name}</h3>
+                  <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-4">{dance.tagline}</p>
+                  <p className="text-zinc-400 text-xs leading-relaxed opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+                    {dance.description}
+                  </p>
+
+                  <div className="mt-6 flex items-center gap-2 text-[10px] font-black text-white uppercase tracking-widest group/btn">
+                    Ver Coreografias
+                    <i className="fa-solid fa-play text-emerald-400 group-hover/btn:translate-x-1 transition-transform"></i>
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         </section>
