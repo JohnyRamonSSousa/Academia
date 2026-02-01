@@ -18,12 +18,18 @@ import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
+const DEFAULT_AVATARS = {
+    male: 'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man.png',
+    female: 'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Woman.png'
+};
+
 const JoinNow: React.FC = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         phone: '',
         password: '',
+        gender: 'male' // 'male' or 'female'
     });
     const [selectedPlan, setSelectedPlan] = useState('pro');
     const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
@@ -55,9 +61,12 @@ const JoinNow: React.FC = () => {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
 
+            const initialAvatar = formData.gender === 'female' ? DEFAULT_AVATARS.female : DEFAULT_AVATARS.male;
+
             // 1.5 Update Auth Profile
             await updateProfile(user, {
-                displayName: formData.name
+                displayName: formData.name,
+                photoURL: initialAvatar
             });
 
             // Calculate next payment date (1 month from today)
@@ -71,6 +80,8 @@ const JoinNow: React.FC = () => {
                 name: formData.name,
                 phone: formData.phone,
                 email: formData.email,
+                gender: formData.gender,
+                avatar: initialAvatar,
                 plan: selectedPlan,
                 addons: selectedAddons,
                 totalPrice: totalPrice,
@@ -186,6 +197,31 @@ const JoinNow: React.FC = () => {
                                     />
                                 </div>
                                 <div>
+                                    <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-widest">Gênero</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, gender: 'male' })}
+                                            className={`py-4 rounded-xl text-sm font-bold uppercase transition-all ${formData.gender === 'male'
+                                                ? 'bg-lime-400 text-black'
+                                                : 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-zinc-700'
+                                                }`}
+                                        >
+                                            Masculino
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, gender: 'female' })}
+                                            className={`py-4 rounded-xl text-sm font-bold uppercase transition-all ${formData.gender === 'female'
+                                                ? 'bg-lime-400 text-black'
+                                                : 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-zinc-700'
+                                                }`}
+                                        >
+                                            Feminino
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2">
                                     <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-widest">Crie uma Senha</label>
                                     <input
                                         type="password"

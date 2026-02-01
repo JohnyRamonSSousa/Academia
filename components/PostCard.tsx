@@ -31,14 +31,9 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, isLoggedIn
                             <img src={post.userAvatar} alt={post.userName} className="w-full h-full object-cover" />
                         </div>
                     </div>
-                    <div>
-                        <h4 className="text-white font-bold text-xs tracking-tight hover:text-zinc-300 cursor-pointer">{post.userName}</h4>
-                        <p className="text-zinc-500 text-[10px] font-medium">{post.createdAt}</p>
-                    </div>
+
                 </div>
-                <button className="text-zinc-400 hover:text-white transition-colors p-1">
-                    <i className="fa-solid fa-ellipsis-vertical text-sm"></i>
-                </button>
+
             </div>
 
             {/* Image */}
