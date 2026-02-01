@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Post } from '../types';
-import { db } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { Post, Comment } from '../types';
+import { db, auth } from '../firebase';
+import { collection, query, orderBy, limit, onSnapshot, addDoc, updateDoc, doc, getDoc, arrayUnion } from 'firebase/firestore';
+import PostCard from '../components/PostCard';
+import PostForm from '../components/PostForm';
 
 interface HomeProps {
   isLoggedIn?: boolean;
@@ -10,19 +12,139 @@ interface HomeProps {
 
 const Home: React.FC<HomeProps> = ({ isLoggedIn }) => {
   const [syncedPosts, setSyncedPosts] = useState<Post[]>([]);
+  const [userProfile, setUserProfile] = useState({
+    name: 'TITÃ',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80'
+  });
 
   useEffect(() => {
+    // Fetch User Profile
+    const fetchUserProfile = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUserProfile({
+            name: data.name || 'TITÃ',
+            avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80'
+          });
+        }
+      }
+    };
+
+    if (isLoggedIn) fetchUserProfile();
+
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(8));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedPosts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Post));
+      const user = auth.currentUser;
+      const fetchedPosts = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          isLiked: data.likedBy?.includes(user?.uid)
+        } as Post;
+      });
       setSyncedPosts(fetchedPosts);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isLoggedIn]);
+
+  const handleCreatePost = async (image: string, caption: string) => {
+    const user = auth.currentUser;
+    if (!isLoggedIn || !user) return;
+
+    try {
+      await addDoc(collection(db, 'posts'), {
+        userName: userProfile.name,
+        userAvatar: userProfile.avatar,
+        userId: user.uid,
+        image,
+        caption,
+        likesCount: 0,
+        likedBy: [],
+        comments: [],
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error creating post:", error);
+    }
+  };
+
+  const dispatchNotification = (type: 'like' | 'comment', fromUser: string, avatar: string, content: string) => {
+    const event = new CustomEvent('je-notification', {
+      detail: {
+        id: Date.now().toString(),
+        type,
+        content,
+        fromUser,
+        fromAvatar: avatar,
+        createdAt: 'Agora',
+        isRead: false
+      }
+    });
+    window.dispatchEvent(event);
+  };
+
+  const handleLike = async (postId: string) => {
+    const user = auth.currentUser;
+    if (!isLoggedIn || !user) {
+      alert('Você precisa estar logado para curtir as postagens!');
+      return;
+    }
+
+    try {
+      const postRef = doc(db, 'posts', postId);
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const postData = postSnap.data();
+        const likedBy = postData.likedBy || [];
+        const isLiked = likedBy.includes(user.uid);
+
+        await updateDoc(postRef, {
+          likedBy: isLiked ? likedBy.filter((uid: string) => uid !== user.uid) : [...likedBy, user.uid],
+          likesCount: isLiked ? (postData.likesCount || 1) - 1 : (postData.likesCount || 0) + 1
+        });
+
+        if (!isLiked) {
+          dispatchNotification('like', 'Um Aluno JE', 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=80', 'curtiu sua publicação');
+        }
+      }
+    } catch (error) {
+      console.error("Error liking post:", error);
+    }
+  };
+
+  const handleComment = async (postId: string, content: string) => {
+    const user = auth.currentUser;
+    if (!isLoggedIn || !user) {
+      alert('Você precisa estar logado para comentar!');
+      return;
+    }
+
+    try {
+      const postRef = doc(db, 'posts', postId);
+      const newComment: Comment = {
+        id: Date.now().toString(),
+        userName: userProfile.name,
+        userAvatar: userProfile.avatar,
+        content,
+        createdAt: 'Agora mesmo'
+      };
+
+      await updateDoc(postRef, {
+        comments: arrayUnion(newComment)
+      });
+
+      dispatchNotification('comment', 'Um Aluno JE', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=80', 'respondeu ao seu post: "' + content.substring(0, 20) + '..."');
+
+    } catch (error) {
+      console.error("Error commenting:", error);
+    }
+  };
   return (
     <div className="overflow-hidden">
       {/* Hero Section */}
@@ -143,71 +265,42 @@ const Home: React.FC<HomeProps> = ({ isLoggedIn }) => {
             Não é apenas sobre treinar, é sobre pertencer. Veja o que nossos alunos estão compartilhando hoje.
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-16">
-            {syncedPosts.length > 0 ? (
-              syncedPosts.map((post) => (
-                <div key={post.id} className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer border border-zinc-900">
-                  <img
-                    src={post.image}
-                    alt="Community post"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                    <div className="flex gap-4 text-white">
-                      <span className="flex items-center gap-1 text-sm font-bold">
-                        <i className="fa-solid fa-heart text-lime-400"></i> {post.likesCount}
-                      </span>
-                      <span className="flex items-center gap-1 text-sm font-bold">
-                        <i className="fa-solid fa-comment"></i> {post.comments.length}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <img src={post.userAvatar} className="w-5 h-5 rounded-full border border-lime-400/30" alt={post.userName} />
-                    <span className="text-white text-[10px] font-black uppercase truncate max-w-[80px]">{post.userName}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              // Default fallback if no posts exist
-              [
-                'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800',
-                'https://images.unsplash.com/photo-1541534741688-6078c64b52d2?q=80&w=800',
-                'https://images.unsplash.com/photo-1549476464-37392f71755a?q=80&w=800',
-                'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800',
-                'https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=800',
-                'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800',
-                'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=800',
-                'https://images.unsplash.com/photo-1599058917212-d750089bc07e?q=80&w=800'
-              ].map((img, i) => (
-                <div key={i} className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer">
-                  <img
-                    src={img}
-                    alt="Community post"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="flex gap-4 text-white">
-                      <span className="flex items-center gap-1 text-sm font-bold">
-                        <i className="fa-solid fa-heart text-lime-400"></i> {Math.floor(Math.random() * 200)}
-                      </span>
-                      <span className="flex items-center gap-1 text-sm font-bold">
-                        <i className="fa-solid fa-comment"></i> {Math.floor(Math.random() * 20)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
+          <div className="max-w-3xl mx-auto">
+            {isLoggedIn && (
+              <div className="mb-12">
+                <PostForm onPost={handleCreatePost} />
+              </div>
             )}
-          </div>
 
-          <Link
-            to="/community"
-            className="inline-flex items-center gap-4 bg-zinc-900 border border-zinc-800 text-white font-black uppercase tracking-widest px-10 py-4 rounded-full hover:bg-zinc-800 transition-all transform hover:scale-105"
-          >
-            Ver Galeria Completa
-            <i className="fa-solid fa-arrow-right text-lime-400"></i>
-          </Link>
+            <div className={`grid grid-cols-1 ${isLoggedIn ? 'gap-8' : 'md:grid-cols-2 gap-4'} mb-16`}>
+              {syncedPosts.length > 0 ? (
+                // If logged in, show full PostCards. If not, show the image preview grid (or maybe just cards but read-only?)
+                // The user said "all visitors can see". PostCard handles view-only nicely.
+                syncedPosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onLike={handleLike}
+                    onComment={handleComment}
+                    isLoggedIn={!!isLoggedIn}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full text-center py-20 bg-zinc-900/30 rounded-3xl border border-zinc-800 border-dashed">
+                  <i className="fa-solid fa-comments text-zinc-800 text-4xl mb-4"></i>
+                  <p className="text-zinc-500 uppercase text-xs font-bold tracking-widest">Nenhuma postagem ainda. Seja o primeiro!</p>
+                </div>
+              )}
+            </div>
+
+            <Link
+              to="/community"
+              className="inline-flex items-center gap-4 bg-zinc-900 border border-zinc-800 text-white font-black uppercase tracking-widest px-10 py-4 rounded-full hover:bg-zinc-800 transition-all transform hover:scale-105"
+            >
+              Ver Galeria Completa
+              <i className="fa-solid fa-arrow-right text-lime-400"></i>
+            </Link>
+          </div>
         </div>
       </section>
 
