@@ -161,73 +161,54 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogin, onLogout }) => {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Dropdown Menu */}
       {isMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
-          onClick={() => setIsMenuOpen(false)}
-        />
-      )}
-
-      {/* Mobile Drawer Menu */}
-      <div className={`fixed top-0 left-0 h-full w-[280px] bg-zinc-950 z-[100] transform transition-transform duration-300 ease-in-out border-r border-zinc-800 md:hidden shadow-2xl ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-10">
-            <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-2">
-              <span className="text-xl font-black tracking-tighter text-white">JE<span className="neon-accent"> ACADEMIA</span></span>
-            </Link>
-            <button
-              onClick={() => setIsMenuOpen(false)}
-              className="text-zinc-400 hover:text-white p-2"
-            >
-              <i className="fa-solid fa-xmark text-2xl"></i>
-            </button>
-          </div>
-
-          <div className="space-y-2 mb-10">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                onClick={() => setIsMenuOpen(false)}
-                className={`${isActive(link.path) ? 'bg-zinc-800/50 text-lime-400 border-l-2 border-lime-400' : 'text-zinc-300'
-                  } block px-4 py-3 text-sm font-bold uppercase tracking-widest`}
-              >
-                {link.name}
-              </Link>
-            ))}
-          </div>
-
-          <div className="pt-6 border-t border-zinc-900">
-            {!isLoggedIn ? (
-              <Link
-                to="/login"
-                onClick={() => setIsMenuOpen(false)}
-                className="w-full neon-bg text-black block px-6 py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest"
-              >
-                Entrar
-              </Link>
-            ) : (
-              <div className="space-y-4">
+        <div className="md:hidden absolute top-20 left-0 w-full bg-zinc-950 border-b border-zinc-800 shadow-2xl animate-in slide-in-from-top-5 duration-300 z-40">
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              {navLinks.map((link) => (
                 <Link
-                  to="/dashboard"
+                  key={link.path}
+                  to={link.path}
                   onClick={() => setIsMenuOpen(false)}
-                  className="block px-6 py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                  className={`${isActive(link.path) ? 'bg-zinc-800/50 text-lime-400 border-l-2 border-lime-400' : 'text-zinc-300 hover:text-white hover:bg-zinc-900'
+                    } block px-4 py-3 text-sm font-bold uppercase tracking-widest transition-all rounded-r-xl`}
                 >
-                  Minha Conta
+                  {link.name}
                 </Link>
-                <button
-                  onClick={() => { onLogout(); setIsMenuOpen(false); }}
-                  className="w-full text-zinc-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+              ))}
+            </div>
+
+            <div className="pt-4 border-t border-zinc-900">
+              {!isLoggedIn ? (
+                <Link
+                  to="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="w-full neon-bg text-black block px-6 py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest hover:bg-lime-500 transition-colors"
                 >
-                  Sair da Conta
-                </button>
-              </div>
-            )}
+                  Entrar
+                </Link>
+              ) : (
+                <div className="space-y-3">
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-6 py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                  >
+                    Minha Conta
+                  </Link>
+                  <button
+                    onClick={() => { onLogout(); setIsMenuOpen(false); }}
+                    className="w-full text-zinc-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors py-2"
+                  >
+                    Sair da Conta
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 };

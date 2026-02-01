@@ -62,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
          if (docSnap.exists()) {
             const data = docSnap.data();
             const profile = {
-               name: data.name || 'TITÃ',
+               name: data.name || user.displayName || 'TITÃ',
                avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150',
                plan: data.plan || 'Plano Básico',
                nextPayment: data.nextPayment || '15 Jan 2027'
@@ -201,10 +201,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
 
       try {
          const docRef = doc(db, 'users', user.uid);
-         await updateDoc(docRef, {
+         await setDoc(docRef, {
             name: tempProfile.name,
             avatar: tempProfile.avatar
-         });
+         }, { merge: true });
          setUserProfile(tempProfile);
          setIsEditModalOpen(false);
       } catch (error: any) {
@@ -855,29 +855,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       <div className="min-h-screen bg-zinc-950 py-12">
          <div className="max-w-7xl mx-auto px-4">
             <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-               <div className="flex items-center gap-6">
-                  <div className="relative group cursor-pointer" onClick={() => { setTempProfile(userProfile); setIsEditModalOpen(true); }}>
-                     <img
-                        src={userProfile.avatar}
-                        className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-2 border-lime-400/30 group-hover:border-lime-400 transition-colors"
-                        alt="Avatar"
-                     />
-                     <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <i className="fa-solid fa-pen text-white text-xs"></i>
-                     </div>
-                  </div>
-                  <div>
-                     <h1 className="text-4xl font-black text-white italic uppercase flex items-center gap-3">
-                        BEM-VINDO, <span className="neon-accent">{userProfile.name}!</span>
-                        <button
-                           onClick={() => { setTempProfile(userProfile); setIsEditModalOpen(true); }}
-                           className="text-zinc-600 hover:text-white transition-colors text-sm"
-                        >
-                           <i className="fa-solid fa-gear"></i>
-                        </button>
-                     </h1>
-                     <p className="text-zinc-500">Mantenha o foco, seus resultados estão logo ali.</p>
-                  </div>
+               <div>
+                  <h1 className="text-4xl font-black text-white italic uppercase flex items-center gap-3">
+                     BEM-VINDO!
+                  </h1>
+                  <p className="text-zinc-500">Mantenha o foco, seus resultados estão logo ali.</p>
                </div>
                <div className="flex bg-zinc-900 rounded-2xl p-1.5 border border-zinc-800">
                   {['Overview', 'Treinos', 'Financeiro', 'Comunidade'].map(tab => (
@@ -992,9 +974,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
 
                         <button
                            type="submit"
-                           className="w-full neon-bg text-black font-black py-5 rounded-2xl uppercase tracking-[0.2em] shadow-lg shadow-lime-400/20 active:scale-95 transition-all"
+                           disabled={isUploading}
+                           className={`w-full neon-bg text-black font-black py-5 rounded-2xl uppercase tracking-[0.2em] shadow-lg shadow-lime-400/20 active:scale-95 transition-all ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                           Salvar Alterações
+                           {isUploading ? 'Aguardando Upload...' : 'Salvar Alterações'}
                         </button>
                      </form>
                   </div>

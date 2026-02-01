@@ -10,8 +10,39 @@ interface HomeProps {
   isLoggedIn?: boolean;
 }
 
+const FIXED_POSTS: Post[] = [
+  {
+    id: 'fixed-1',
+    userName: 'JE Academia',
+    userAvatar: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=80',
+    image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=800',
+    caption: 'Bem-vindos à nova era da sua transformação! 💪 Foco total nos objetivos dessa semana. Quem vem comigo? #FocoNoTreino #AcademiaJE',
+    likesCount: 124,
+    comments: [],
+    likedBy: [],
+    createdAt: new Date().toISOString(),
+    isLiked: false
+  },
+  {
+    id: 'fixed-2',
+    userName: 'Coach Marcos',
+    userAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?q=80&w=80',
+    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800',
+    caption: 'A aula de hoje foi insana! Parabéns a todos que superaram seus limites. Amanhã tem mais! 🔥🏋️‍♂️',
+    likesCount: 89,
+    comments: [],
+    likedBy: [],
+    createdAt: new Date().toISOString(),
+    isLiked: false
+  }
+];
+
 const Home: React.FC<HomeProps> = ({ isLoggedIn }) => {
-  const [syncedPosts, setSyncedPosts] = useState<Post[]>([]);
+  const [syncedPosts, setSyncedPosts] = useState<Post[]>(() => {
+    const cached = localStorage.getItem('je_cached_home_posts');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const displayPosts = [...FIXED_POSTS, ...syncedPosts];
   const [userProfile, setUserProfile] = useState({
     name: 'TITÃ',
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80'
@@ -23,13 +54,23 @@ const Home: React.FC<HomeProps> = ({ isLoggedIn }) => {
       const user = auth.currentUser;
       if (user) {
         const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setUserProfile({
-            name: data.name || 'TITÃ',
-            avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80'
-          });
+        try {
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUserProfile({
+              name: data.name || user.displayName || 'TITÃ',
+              avatar: data.avatar || user.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=80'
+            });
+          } else if (user.displayName) {
+            setUserProfile(prev => ({
+              ...prev,
+              name: user.displayName || 'TITÃ',
+              avatar: user.photoURL || prev.avatar
+            }));
+          }
+        } catch (error) {
+          console.error("Error fetching profile:", error);
         }
       }
     };
@@ -37,18 +78,29 @@ const Home: React.FC<HomeProps> = ({ isLoggedIn }) => {
     if (isLoggedIn) fetchUserProfile();
 
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(8));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const user = auth.currentUser;
-      const fetchedPosts = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          isLiked: data.likedBy?.includes(user?.uid)
-        } as Post;
-      });
-      setSyncedPosts(fetchedPosts);
-    });
+    const unsubscribe = onSnapshot(q,
+      (snapshot) => {
+        const user = auth.currentUser;
+        const fetchedPosts = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            isLiked: data.likedBy?.includes(user?.uid)
+          } as Post;
+        });
+        setSyncedPosts(fetchedPosts);
+
+        // Cache posts for guest view
+        if (fetchedPosts.length > 0) {
+          localStorage.setItem('je_cached_home_posts', JSON.stringify(fetchedPosts));
+        }
+      },
+      (error) => {
+        console.warn("Firestore access restricted (guest mode), using cached posts:", error);
+        // Do not clear syncedPosts, let it persist from cache
+      }
+    );
 
     return () => unsubscribe();
   }, [isLoggedIn]);
@@ -96,6 +148,11 @@ const Home: React.FC<HomeProps> = ({ isLoggedIn }) => {
       return;
     }
 
+    if (postId.startsWith('fixed-')) {
+      alert('Esta é uma postagem fixa da administração e não pode receber interações.');
+      return;
+    }
+
     try {
       const postRef = doc(db, 'posts', postId);
       const postSnap = await getDoc(postRef);
@@ -122,6 +179,11 @@ const Home: React.FC<HomeProps> = ({ isLoggedIn }) => {
     const user = auth.currentUser;
     if (!isLoggedIn || !user) {
       alert('Você precisa estar logado para comentar!');
+      return;
+    }
+
+    if (postId.startsWith('fixed-')) {
+      alert('Esta é uma postagem fixa da administração e não pode receber interações.');
       return;
     }
 
@@ -272,11 +334,10 @@ const Home: React.FC<HomeProps> = ({ isLoggedIn }) => {
               </div>
             )}
 
+            {/* Posts Feed */}
             <div className={`grid grid-cols-1 ${isLoggedIn ? 'gap-8' : 'md:grid-cols-2 gap-4'} mb-16`}>
-              {syncedPosts.length > 0 ? (
-                // If logged in, show full PostCards. If not, show the image preview grid (or maybe just cards but read-only?)
-                // The user said "all visitors can see". PostCard handles view-only nicely.
-                syncedPosts.map((post) => (
+              {displayPosts.length > 0 ? (
+                displayPosts.map((post) => (
                   <PostCard
                     key={post.id}
                     post={post}

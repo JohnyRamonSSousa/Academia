@@ -15,7 +15,7 @@ const ADDONS = [
 ];
 
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
 const JoinNow: React.FC = () => {
@@ -54,6 +54,11 @@ const JoinNow: React.FC = () => {
             // 1. Create User in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
+
+            // 1.5 Update Auth Profile
+            await updateProfile(user, {
+                displayName: formData.name
+            });
 
             // Calculate next payment date (1 month from today)
             const today = new Date();
