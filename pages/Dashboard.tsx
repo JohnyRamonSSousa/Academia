@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import ChangePlanModal from '../components/ChangePlanModal';
-import { Link } from 'react-router-dom';
+
+
+import { Link, useNavigate } from 'react-router-dom';
 import { EXERCISES, PRODUCTS } from '../data';
 import { Post } from '../types';
 import { auth, db, storage } from '../firebase';
@@ -17,6 +19,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
+   const navigate = useNavigate();
    const [activeTab, setActiveTab] = useState('Overview');
    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
    const [isChangePlanModalOpen, setIsChangePlanModalOpen] = useState(false);
@@ -50,6 +53,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
    const cameraInputRef = React.useRef<HTMLInputElement>(null);
 
    useEffect(() => {
+      if (!isAuthLoading && !user) {
+         navigate('/');
+         return;
+      }
       if (!user) {
          if (!isAuthLoading) setIsLoadingProfile(false);
          return;
@@ -376,62 +383,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
 
    const renderTabContent = () => {
       switch (activeTab) {
-         case 'Comunidade':
-            return (
-               <div className="lg:col-span-12">
-                  <div className="bg-zinc-900 rounded-3xl p-8 border border-zinc-800">
-                     <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">MINHAS POSTAGENS</h3>
-                        <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
-                           {userPosts.length} Publicações
-                        </div>
-                     </div>
+         // Case Removed
 
-                     {userPosts.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                           {userPosts.map(post => (
-                              <div key={post.id} className="glass-card rounded-2xl border border-zinc-800 overflow-hidden group">
-                                 <div className="aspect-square relative">
-                                    <img src={post.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="Post" />
-                                    <button
-                                       onClick={() => handleDeletePost(post.id)}
-                                       className="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                    >
-                                       <i className="fa-solid fa-trash-can text-xs"></i>
-                                    </button>
-                                 </div>
-                                 <div className="p-4">
-                                    <p className="text-zinc-400 text-sm line-clamp-2 mb-3">{post.caption}</p>
-                                    <div className="flex items-center justify-between">
-                                       <div className="flex gap-4">
-                                          <span className="text-zinc-500 text-xs font-bold flex items-center gap-1">
-                                             <i className="fa-solid fa-heart text-lime-400"></i> {post.likes}
-                                          </span>
-                                          <span className="text-zinc-500 text-xs font-bold flex items-center gap-1">
-                                             <i className="fa-solid fa-comment"></i> {post.comments.length}
-                                          </span>
-                                       </div>
-                                       <span className="text-zinc-600 text-[10px] uppercase font-bold">{post.createdAt}</span>
-                                    </div>
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
-                     ) : (
-                        <div className="text-center py-20">
-                           <div className="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-6 border border-zinc-700">
-                              <i className="fa-solid fa-camera text-zinc-600 text-3xl"></i>
-                           </div>
-                           <h4 className="text-white font-bold mb-2">Nenhuma postagem ainda</h4>
-                           <p className="text-zinc-500 text-sm mb-8">Compartilhe sua evolução com a comunidade JE!</p>
-                           <Link to="/community" className="inline-block text-lime-400 font-bold uppercase tracking-widest text-xs border-b border-lime-400 pb-1">
-                              Ir para a Comunidade
-                           </Link>
-                        </div>
-                     )}
-                  </div>
-               </div>
-            );
 
          case 'Treinos':
             return (
@@ -638,6 +591,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
                         >
                            Gerenciar Plano
                         </button>
+
+
                      </div>
 
                      <div className="grid grid-cols-2 gap-4">
@@ -862,7 +817,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
                   <p className="text-zinc-500">Mantenha o foco, seus resultados estão logo ali.</p>
                </div>
                <div className="flex bg-zinc-900 rounded-2xl p-1.5 border border-zinc-800">
-                  {['Overview', 'Treinos', 'Financeiro', 'Comunidade'].map(tab => (
+                  {['Overview', 'Treinos', 'Financeiro'].map(tab => (
                      <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -1247,6 +1202,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
                nextPaymentDate={userProfile.nextPayment}
             />
          )}
+
+
+
       </div>
    );
 };
