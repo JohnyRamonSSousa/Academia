@@ -1,7 +1,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, enableMultiTabIndexedDbPersistence, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -17,26 +17,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Initialize Firestore
-// We use initializeFirestore to settings if needed, but for persistence we use the async function below
-export const db = getFirestore(app);
-
-// Enable offline persistence
-// This is async and might fail if multiple tabs are open without multi-tab enabled, 
-// so we wrap it in a try-catch and log, but don't block the app.
-try {
-    enableMultiTabIndexedDbPersistence(db).catch((err) => {
-        if (err.code == 'failed-precondition') {
-            // Multiple tabs open, persistence can only be enabled in one tab at a a time.
-            console.warn("Firestore persistence failed: Multiple tabs open.");
-        } else if (err.code == 'unimplemented') {
-            // The current browser does not support all of the features required to enable persistence
-            console.warn("Firestore persistence not supported by browser.");
-        }
-    });
-} catch (error) {
-    console.error("Error enabling persistence:", error);
-}
+// Initialize Firestore with modern persistence configuration
+// This avoids the deprecation warning for enableMultiTabIndexedDbPersistence
+export const db = initializeFirestore(app, {
+    localCache: persistentLocalCache()
+});
 
 export const storage = getStorage(app);
 
