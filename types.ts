@@ -136,3 +136,36 @@ export interface WorkoutHistory {
   exerciseCount: number;
   completedAt: any;
 }
+
+export type UserRole = 'admin' | 'student';
+
+export interface User {
+  id: string; // auth.uid
+  name: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  plano: string; // Plan ID or Name
+  status: 'ativo' | 'vencido';
+  data_vencimento: any; // Firestore Timestamp
+  data_cadastro: any; // Firestore Timestamp
+}
+
+export interface Plan {
+  id: string;
+  nome_plano: string;
+  valor: number;
+  duracao_dias: number;
+  descricao: string;
+}
+
+export interface Payment {
+  id: string;
+  user_id: string;
+  nome_usuario: string;
+  valor: number;
+  metodo_pagamento: 'pix' | 'cartao' | 'boleto';
+  status: 'pago' | 'pendente' | 'cancelado';
+  data_pagamento: any; // Firestore Timestamp
+  data_vencimento_gerada: any; // Firestore Timestamp
+}
