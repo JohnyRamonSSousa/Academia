@@ -25,15 +25,12 @@ const Login: React.FC = () => {
             // Fetch role to redirect correctly
             const userDoc = await userService.getUser(user.uid);
 
-            if (userDoc) {
-                if (userDoc.role === 'admin') {
-                    navigate('/admin');
-                } else {
-                    navigate('/student');
-                }
+            if (userDoc && userDoc.role === 'admin') {
+                navigate('/admin');
             } else {
-                // Fallback if no firestore doc (shouldn't happen for valid users)
-                setError('Erro ao buscar dados do usuário.');
+                // Default to student dashboard even if doc is failing (AuthContext will handle it)
+                // This fixes access for users who might have auth but incomplete firestore data
+                navigate('/student');
             }
         } catch (err: any) {
             console.error(err);

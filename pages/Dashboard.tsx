@@ -9,16 +9,13 @@ import { Post } from '../types';
 import { auth, db, storage } from '../firebase';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, deleteDoc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { User } from 'firebase/auth';
-import { MuscleGroup, Exercise, UserWorkout, WorkoutExercise, WorkoutHistory } from '../types';
+import { MuscleGroup, Exercise, UserWorkout, WorkoutExercise, WorkoutHistory, Post } from '../types';
 import { increment } from 'firebase/firestore';
 
-interface DashboardProps {
-   user: User | null;
-   isAuthLoading: boolean;
-}
+import { useAuth } from '../contexts/AuthContext';
 
-const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
+const Dashboard: React.FC = () => {
+   const { user, loading: isAuthLoading } = useAuth();
    const navigate = useNavigate();
    const [activeTab, setActiveTab] = useState('Overview');
    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -63,13 +60,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       }
 
       setIsLoadingProfile(true);
-      const docRef = doc(db, 'users', user.uid);
+      const docRef = doc(db, 'users', user.id);
 
       const unsubscribe = onSnapshot(docRef, (docSnap) => {
          if (docSnap.exists()) {
             const data = docSnap.data();
             const profile = {
-               name: data.name || user.displayName || 'TITÃ',
+               name: data.name || user.name || 'TITÃ',
                avatar: data.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=150',
                plan: data.plan || 'Plano Básico',
                nextPayment: data.nextPayment || '15 Jan 2027'
@@ -101,7 +98,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
 
       const q = query(
          collection(db, 'userWorkouts'),
-         where('userId', '==', user.uid)
+         where('userId', '==', user.id)
          // orderBy('createdAt', 'desc') // Removed to prevent index error
       );
 
@@ -121,7 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
 
       const q = query(
          collection(db, 'workoutHistory'),
-         where('userId', '==', user.uid)
+         where('userId', '==', user.id)
          // orderBy('completedAt', 'desc') // Removed to prevent index error
       );
 
@@ -155,7 +152,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
 
       const q = query(
          collection(db, 'posts'),
-         where('userId', '==', user.uid)
+         where('userId', '==', user.id)
          // orderBy('createdAt', 'desc') // Removed to prevent index error
       );
 
@@ -163,7 +160,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
          const fetchedPosts = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            isLiked: doc.data().likedBy?.includes(user?.uid)
+            isLiked: doc.data().likedBy?.includes(user?.id)
          } as Post));
          setUserPosts(fetchedPosts);
       });
@@ -207,7 +204,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       if (!user) return;
 
       try {
-         const docRef = doc(db, 'users', user.uid);
+         const docRef = doc(db, 'users', user.id);
          await setDoc(docRef, {
             name: tempProfile.name,
             avatar: tempProfile.avatar
@@ -232,7 +229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
             });
          } else {
             await addDoc(collection(db, 'userWorkouts'), {
-               userId: user.uid,
+               userId: user.id,
                ...workoutForm,
                createdAt: serverTimestamp()
             });
@@ -297,7 +294,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       try {
          const durationStr = formatTime(secondsElapsed);
          await addDoc(collection(db, 'workoutHistory'), {
-            userId: user.uid,
+            userId: user.id,
             workoutName: inProgressWorkout.name,
             muscleGroup: inProgressWorkout.muscleGroup,
             actualDuration: durationStr,
@@ -313,7 +310,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
          }));
 
          // Update stats in Firestore
-         const userRef = doc(db, 'users', user.uid);
+         const userRef = doc(db, 'users', user.id);
          await updateDoc(userRef, {
             workoutsCompleted: increment(1),
             streak: increment(1)
@@ -354,7 +351,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, isAuthLoading }) => {
       try {
          // Use a timestamp to avoid caching issues and ensure uniqueness
          const uniqueFilename = `avatar_${Date.now()}`;
-         const storageRef = ref(storage, `avatars/${user.uid}/${uniqueFilename}`);
+         const storageRef = ref(storage, `avatars/${user.id}/${uniqueFilename}`);
 
          await uploadBytes(storageRef, file);
          const downloadURL = await getDownloadURL(storageRef);

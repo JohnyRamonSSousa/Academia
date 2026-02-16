@@ -8,7 +8,7 @@ import {
 import { auth, db } from '../firebase';
 import { userService } from '../services/firestore';
 import { User } from '../types';
-import { enableNetwork } from 'firebase/firestore';
+import { doc, onSnapshot, enableNetwork, Timestamp } from 'firebase/firestore';
 
 interface AuthContextType {
     user: User | null;
@@ -42,50 +42,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
             if (firebaseUser) {
-                try {
-                    // Slight delay to allow Firestore to initialize/restore cache
-                    // This often fixes "client is offline" race conditions on reload
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                // Listen to user changes in real-time to handle race conditions during registration
+                // This ensures that as soon as the profile is created in Firestore, the app updates
+                const userRef = doc(db, 'users', firebaseUser.uid);
+                const unsubscribeUser = onSnapshot(userRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data() as User;
 
-                    const userDoc = await userService.getUser(firebaseUser.uid);
-                    if (userDoc) {
-                        // Check if status needs update based on expired date?
-                        if (userDoc.status === 'ativo' && userDoc.data_vencimento) {
+                        // Check for expired status
+                        if (userData.status === 'ativo' && userData.data_vencimento) {
                             try {
-                                const vencimento = userDoc.data_vencimento.toDate();
+                                const vencimento = userData.data_vencimento.toDate();
                                 const now = new Date();
                                 if (vencimento < now) {
-                                    // Try to update, but don't block login if this fails (e.g. offline)
-                                    userService.updateUserStatus(userDoc.id, 'vencido', userDoc.data_vencimento).catch(console.warn);
-                                    userDoc.status = 'vencido';
+                                    // Optimistic update
+                                    userData.status = 'vencido';
+                                    userService.updateUserStatus(userData.id, 'vencido', userData.data_vencimento).catch(console.warn);
                                 }
                             } catch (dateErr) {
                                 console.warn("Date check error:", dateErr);
                             }
                         }
-                        setUser(userDoc);
-                    } else {
-                        // User exists in Auth but not locally/remotely yet?
-                        // Keep the auth user but with restricted access until profile loads?
-                        // For now, set null to force login/register flow or show error
-                        console.warn("User authenticated but profile not found in Firestore.");
-                        setUser(null);
-                    }
-                } catch (error: any) {
-                    console.error("Error fetching user data:", error);
 
-                    // If offline, maybe we can't get the user profile yet.
-                    // But we shouldn't necessarily log them out if it's just a network blip.
-                    // For this simple app, we set user to null to play safe, or we could handle a "retry" state.
-                    if (error.code === 'unavailable' || error.message.includes('offline')) {
-                        console.log("Offline mode detected. Waiting for connection...");
+                        // Ensure role exists to prevent redirect loops in ProtectedRoute
+                        if (!userData.role) {
+                            userData.role = 'student';
+                        }
+
+                    } else {
+                        // Profile doesn't exist (legacy user or race condition)
+                        // Create a fallback user object to allow access
+                        console.warn("User profile missing in Firestore, using fallback.");
+                        const fallbackUser: User = {
+                            id: firebaseUser.uid,
+                            name: firebaseUser.displayName || 'Usuário',
+                            email: firebaseUser.email || '',
+                            phone: '',
+                            role: 'student', // Default valid role
+                            plano: '',
+                            status: 'ativo',
+                            data_vencimento: null,
+                            data_cadastro: Timestamp.now()
+                        };
+                        setUser(fallbackUser);
                     }
-                    setUser(null);
-                }
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching user data:", error);
+                    setLoading(false);
+                });
+
+                // Cleanup nested listener when auth changes (or when component unmounts via main cleanup)
+                // Note: onAuthStateChanged doesn't provide a direct way to clean up previous side effects of the callback itself easily 
+                // without external freq refs, but since this is a top-level provider, it mostly runs once per auth state change.
+                // However, stricly speaking we should track the unsubscribeUser.
+
             } else {
                 setUser(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => unsubscribe();

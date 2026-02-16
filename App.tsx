@@ -34,7 +34,7 @@ import Plans from './pages/admin/Plans';
 import AdminPayments from './pages/admin/Payments';
 
 // Student Pages
-import StudentDashboard from './pages/student/StudentDashboard';
+import Dashboard from './pages/Dashboard';
 import StudentPayments from './pages/student/Payments';
 import StudentProfile from './pages/student/Profile';
 import DashboardRedirect from './pages/DashboardRedirect';
@@ -95,7 +95,7 @@ const AppRoutes: React.FC = () => {
         {/* Protected Student Routes */}
         <Route element={<ProtectedRoute allowedRoles={['student']} />}>
           <Route path="/student" element={<StudentLayout />}>
-            <Route index element={<StudentDashboard />} />
+            <Route index element={<Dashboard />} />
             <Route path="payments" element={<StudentPayments />} />
             <Route path="profile" element={<StudentProfile />} />
           </Route>

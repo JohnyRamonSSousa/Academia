@@ -25,7 +25,7 @@ const StudentLayout: React.FC = () => {
                             </div>
                             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                                 <Link to="/student" className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                    Dashboard
+                                    Início
                                 </Link>
                                 <Link to="/student/payments" className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                                     Histórico

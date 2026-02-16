@@ -16,7 +16,7 @@ const ADDONS = [
 
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 
 const DEFAULT_AVATARS = {
     male: 'https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man.png',
@@ -73,7 +73,7 @@ const JoinNow: React.FC = () => {
             const today = new Date();
             const nextMonth = new Date(today);
             nextMonth.setMonth(today.getMonth() + 1);
-            const nextPaymentDate = nextMonth.toLocaleDateString('pt-BR');
+            // const nextPaymentDate = nextMonth.toLocaleDateString('pt-BR'); // Not needed anymore
 
             // 2. Save additional data to Firestore
             await setDoc(doc(db, 'users', user.uid), {
@@ -82,17 +82,19 @@ const JoinNow: React.FC = () => {
                 email: formData.email,
                 gender: formData.gender,
                 avatar: initialAvatar,
-                plan: selectedPlan,
+                plano: selectedPlan, // Corrected field name
+                role: 'student', // improved
+                status: 'ativo', // improved
                 addons: selectedAddons,
                 totalPrice: totalPrice,
-                nextPayment: nextPaymentDate,
+                data_vencimento: Timestamp.fromDate(nextMonth), // Corrected: Timestamp
                 workoutsCompleted: 0,
                 streak: 0,
-                createdAt: new Date().toISOString()
+                data_cadastro: Timestamp.now() // Corrected: Timestamp
             });
 
             // 3. Navigate immediately to Dashboard
-            navigate('/dashboard', { replace: true });
+            navigate('/student', { replace: true });
         } catch (err: any) {
             console.error("Registration error: ", err);
             if (err.code === 'auth/email-already-in-use') {
@@ -181,8 +183,17 @@ const JoinNow: React.FC = () => {
                                         required
                                         className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-lime-400 transition-colors"
                                         placeholder="(00) 00000-0000"
+                                        maxLength={15}
                                         value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        onChange={(e) => {
+                                            let value = e.target.value.replace(/\D/g, '');
+                                            if (value.length > 11) value = value.slice(0, 11);
+
+                                            if (value.length > 2) value = value.replace(/^(\d{2})(\d)/, '($1) $2');
+                                            if (value.length > 7) value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+
+                                            setFormData({ ...formData, phone: value });
+                                        }}
                                     />
                                 </div>
                                 <div>

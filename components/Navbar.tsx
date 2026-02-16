@@ -12,7 +12,10 @@ interface NavbarProps {
 
 
 
+import { useAuth } from '../contexts/AuthContext';
+
 const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogin, onLogout }) => {
+  const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -131,7 +134,7 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogin, onLogout }) => {
                 {isLoggedIn ? (
                   <div className="flex items-center space-x-6">
                     <Link
-                      to="/dashboard"
+                      to={user?.role === 'admin' ? '/admin' : '/student'}
                       className="bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all"
                     >
                       Meu Painel
@@ -195,7 +198,7 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogin, onLogout }) => {
                 ) : (
                   <div className="space-y-3">
                     <Link
-                      to="/dashboard"
+                      to={user?.role === 'admin' ? '/admin' : '/student'}
                       onClick={() => setIsMenuOpen(false)}
                       className="block px-6 py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
                     >

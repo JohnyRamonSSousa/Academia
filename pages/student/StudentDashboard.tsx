@@ -10,7 +10,7 @@ const StudentDashboard: React.FC = () => {
     const { user } = useAuth();
     const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
     const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
     // State to force refresh user data
@@ -18,21 +18,25 @@ const StudentDashboard: React.FC = () => {
     const [userData, setUserData] = useState(user);
 
     useEffect(() => {
+        if (user) setUserData(user);
+    }, [user]);
+
+    useEffect(() => {
         const fetchData = async () => {
             if (!user) return;
-            setLoading(true);
+
             try {
-                // Fetch fresh user data
-                const freshUser = await userService.getUser(user.id);
+                const [plans, freshUser] = await Promise.all([
+                    planService.getPlans(),
+                    userService.getUser(user.id)
+                ]);
+
+                setAvailablePlans(plans);
                 if (freshUser) setUserData(freshUser);
 
-                // Fetch available plans
-                const plans = await planService.getPlans();
-                setAvailablePlans(plans);
-
-                // Find current plan details if user has one
-                if (freshUser?.plano) {
-                    const plan = plans.find(p => p.id === freshUser.plano || p.nome_plano === freshUser.plano);
+                const targetUser = freshUser || userData;
+                if (targetUser?.plano) {
+                    const plan = plans.find(p => p.id === targetUser.plano || p.nome_plano === targetUser.plano);
                     if (plan) setCurrentPlan(plan);
                 }
             } catch (error) {
